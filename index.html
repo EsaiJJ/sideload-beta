@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Sideload — safely install APK, XAPK, APKM and split-APK apps on your Android phone straight from your browser. No server, no installation.">
+  <title>Sideload · Install apps on your Android phone</title>
+  <link rel="stylesheet" href="./style.css">
+
+  <!--
+    Static ES modules, no build step. Versions are pinned deliberately so the
+    ADB packages and their internal stream helpers always match. See README.md.
+  -->
+  <script type="importmap">
+  {
+    "imports": {
+      "@yume-chan/adb": "https://esm.sh/@yume-chan/adb@2.6.4",
+      "@yume-chan/adb-daemon-webusb": "https://esm.sh/@yume-chan/adb-daemon-webusb@2.3.2",
+      "@yume-chan/adb-credential-web": "https://esm.sh/@yume-chan/adb-credential-web@2.1.0",
+      "jszip": "https://esm.sh/jszip@3.10.1"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- ============ Icon sprite (no external icon font) ============ -->
+  <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <symbol id="ic-usb" viewBox="0 0 24 24">
+      <path d="M12 20v-8M12 12c-2.2 0-4-1.8-4-4V6M12 12c2.2 0 4-1.8 4-4V6"/>
+      <rect x="8" y="2" width="2" height="4" rx="1"/><rect x="14" y="2" width="2" height="4" rx="1"/>
+      <path d="M9 12H7a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2h-2"/>
+      <circle cx="12" cy="20" r="1"/>
+    </symbol>
+    <symbol id="ic-phone" viewBox="0 0 24 24">
+      <rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10 18.5h4"/><path d="M9 5.5h6"/>
+    </symbol>
+    <symbol id="ic-file" viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>
+    </symbol>
+    <symbol id="ic-download" viewBox="0 0 24 24">
+      <path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+    </symbol>
+    <symbol id="ic-help" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/><path d="M9.4 9.2a2.7 2.7 0 1 1 3.9 2.4c-.8.4-1.3 1-1.3 2"/><path d="M12 17.2h.01"/>
+    </symbol>
+    <symbol id="ic-info" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8h.01"/>
+    </symbol>
+    <symbol id="ic-restart" viewBox="0 0 24 24">
+      <path d="M3.5 12a8.5 8.5 0 1 0 2.8-6.3"/><path d="M3 4v5h5"/>
+    </symbol>
+    <symbol id="ic-check" viewBox="0 0 24 24">
+      <path d="m5 12.5 4.5 4.5L19 7"/>
+    </symbol>
+    <symbol id="ic-close" viewBox="0 0 24 24">
+      <path d="M6 6l12 12M18 6 6 18"/>
+    </symbol>
+    <symbol id="ic-warning" viewBox="0 0 24 24">
+      <path d="M12 3 2.5 20h19L12 3z"/><path d="M12 9v5M12 17.2h.01"/>
+    </symbol>
+    <symbol id="ic-chevron" viewBox="0 0 24 24">
+      <path d="m6 9 6 6 6-6"/>
+    </symbol>
+    <symbol id="ic-copy" viewBox="0 0 24 24">
+      <rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 5.5v-1a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h1"/>
+    </symbol>
+    <symbol id="ic-shield" viewBox="0 0 24 24">
+      <path d="M12 21.5s8-3.8 8-9.6V5.4L12 2.5 4 5.4v6.5c0 5.8 8 9.6 8 9.6z"/><path d="m9 12 2 2 4-4"/>
+    </symbol>
+    <symbol id="ic-lock" viewBox="0 0 24 24">
+      <rect x="4.5" y="10" width="15" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+    </symbol>
+    <symbol id="ic-cable" viewBox="0 0 24 24">
+      <path d="M4 7h5a3 3 0 0 1 3 3v4a3 3 0 0 0 3 3h5"/><rect x="2" y="4" width="4" height="6" rx="1"/><rect x="18" y="14" width="4" height="6" rx="1"/>
+    </symbol>
+    <symbol id="ic-link" viewBox="0 0 24 24">
+      <path d="M10 13.5a4.5 4.5 0 0 0 6.4 0l2-2a4.5 4.5 0 0 0-6.4-6.4l-1.1 1.1"/>
+      <path d="M14 10.5a4.5 4.5 0 0 0-6.4 0l-2 2A4.5 4.5 0 0 0 12 18.9l1.1-1.1"/>
+    </symbol>
+    <symbol id="ic-terminal" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="m7 9 2.5 2.5L7 14"/><path d="M12 15h5"/>
+    </symbol>
+  </svg>
+
+  <!-- ============ Top app bar ============ -->
+  <header class="top-app-bar">
+    <div class="bar-inner">
+      <div class="brand">
+        <span class="brand-mark"><svg class="icon"><use href="#ic-download"/></svg></span>
+        <div class="brand-text">
+          <h1>Sideload</h1>
+          <p>Install apps on your Android phone</p>
+        </div>
+      </div>
+      <span class="beta-badge" id="beta-badge" title="You are testing the beta build">Beta</span>
+    </div>
+  </header>
+
+  <main class="page">
+
+    <!-- Browser compatibility banner (hidden when WebUSB is available) -->
+    <div class="banner banner-warning" id="browser-banner" role="alert" hidden>
+      <svg class="icon"><use href="#ic-warning"/></svg>
+      <div>
+        <strong id="browser-banner-title">WebUSB isn't available here</strong>
+        <p id="browser-banner-text">Use Chrome or Edge on a computer, or Chrome on Android with a USB-OTG cable. The page must be opened over HTTPS (or localhost).</p>
+      </div>
+    </div>
+
+    <div class="card-grid">
+
+      <!-- ============ 1. Device connection ============ -->
+      <section class="card" id="device-card" aria-labelledby="device-title">
+        <div class="card-head">
+          <span class="card-icon tone-blue"><svg class="icon"><use id="device-icon-use" href="#ic-usb"/></svg></span>
+          <div class="card-title-wrap">
+            <h2 id="device-title">Device connection</h2>
+            <p id="device-subtitle">Connect over USB/OTG, or use Termux on this phone</p>
+          </div>
+          <span class="status-chip" id="device-chip" data-state="idle">
+            <span class="dot"></span><span id="device-chip-text">Not connected</span>
+          </span>
+        </div>
+
+        <div class="mode-switch" role="group" aria-label="Connection mode">
+          <button class="mode-btn active" id="mode-usb-btn" type="button" aria-pressed="true">
+            <svg class="icon small"><use href="#ic-usb"/></svg><span>USB / OTG</span>
+          </button>
+          <button class="mode-btn" id="mode-bridge-btn" type="button" aria-pressed="false">
+            <svg class="icon small"><use href="#ic-terminal"/></svg><span>This phone (Termux)</span>
+          </button>
+        </div>
+
+        <div class="connected-panel" id="connected-panel" hidden>
+          <span class="phone-tile"><svg class="icon"><use href="#ic-phone"/></svg></span>
+          <div class="connected-copy">
+            <strong id="device-name">Android device</strong>
+            <span id="device-meta">Reading device information…</span>
+            <span class="serial" id="device-serial"></span>
+          </div>
+          <span class="mini-chip success"><svg class="icon tiny"><use href="#ic-check"/></svg> Ready</span>
+        </div>
+
+        <div class="usb-panel" id="usb-panel">
+          <div class="card-actions">
+            <button class="btn btn-tonal" id="connect-btn" type="button">
+              <svg class="icon"><use href="#ic-usb"/></svg><span id="connect-btn-label">Connect USB device</span>
+            </button>
+            <button class="btn btn-text" id="disconnect-btn" type="button" hidden>Disconnect</button>
+            <button class="btn btn-text small" id="reset-btn" type="button"><svg class="icon small"><use href="#ic-lock"/></svg>Reset authorization</button>
+            <span class="spinner" id="connect-spinner" hidden></span>
+          </div>
+
+          <p class="hint" id="device-hint">Your phone needs USB debugging turned on. You'll approve a prompt on the phone the first time.</p>
+        </div>
+
+        <div class="bridge-panel" id="bridge-panel" hidden>
+          <div class="bridge-status-row">
+            <span class="status-chip" id="bridge-chip" data-state="idle">
+              <span class="dot"></span><span id="bridge-chip-text">Bridge not connected</span>
+            </span>
+            <span class="bridge-address" id="bridge-address">ws://127.0.0.1:8765</span>
+          </div>
+
+          <div class="bridge-callout">
+            <svg class="icon small"><use href="#ic-info"/></svg>
+            <div>
+              <strong>Run the bridge on this phone</strong>
+              <p>In Termux, open this site's <code>termux</code> folder and run <code>bash start.sh</code>. Keep Termux open while installing.</p>
+            </div>
+          </div>
+
+          <div class="bridge-field">
+            <label class="field-label" for="bridge-port">Bridge port</label>
+            <input class="text-field" id="bridge-port" type="number" inputmode="numeric" min="1" max="65535" step="1" value="8765" autocomplete="off">
+          </div>
+
+          <div class="card-actions bridge-actions">
+            <button class="btn btn-tonal" id="bridge-connect-btn" type="button">
+              <svg class="icon"><use href="#ic-link"/></svg>Connect to bridge
+            </button>
+            <button class="btn btn-text" id="bridge-disconnect-btn" type="button" hidden>Disconnect</button>
+            <button class="btn btn-text small" id="bridge-reconnect-btn" type="button" hidden>Reconnect</button>
+            <span class="spinner" id="bridge-spinner" hidden></span>
+          </div>
+
+          <details class="bridge-pair" id="bridge-pair-details">
+            <summary>
+              <svg class="icon small"><use href="#ic-link"/></svg>
+              <span>Pair Wireless Debugging</span>
+              <span class="summary-meta">first-time setup</span>
+            </summary>
+            <p class="bridge-pair-intro">Open <strong>Settings → Developer options → Wireless Debugging → Pair device</strong>. Enter the pairing port and 6-digit code, then connect ADB on the debugging port.</p>
+            <div class="bridge-form-grid">
+              <div class="bridge-field">
+                <label class="field-label" for="pair-port">Pairing port</label>
+                <input class="text-field" id="pair-port" type="number" inputmode="numeric" min="1" max="65535" step="1" placeholder="e.g. 37105" autocomplete="off" disabled>
+              </div>
+              <div class="bridge-field">
+                <label class="field-label" for="pair-code">6-digit code</label>
+                <input class="text-field" id="pair-code" type="text" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="one-time-code" disabled>
+              </div>
+              <div class="bridge-field">
+                <label class="field-label" for="adb-port">Debugging port</label>
+                <input class="text-field" id="adb-port" type="number" inputmode="numeric" min="1" max="65535" step="1" placeholder="e.g. 5555" autocomplete="off" disabled>
+              </div>
+            </div>
+            <div class="card-actions bridge-actions">
+              <button class="btn btn-text small" id="bridge-pair-btn" type="button" disabled><svg class="icon small"><use href="#ic-check"/></svg>Pair</button>
+              <button class="btn btn-tonal small" id="bridge-adb-connect-btn" type="button" disabled><svg class="icon small"><use href="#ic-link"/></svg>Connect ADB</button>
+            </div>
+          </details>
+        </div>
+
+        <div class="additional-actions" id="device-extra" hidden>
+          <button class="btn btn-text small" id="info-btn" type="button"><svg class="icon small"><use href="#ic-info"/></svg>Device info</button>
+          <button class="btn btn-text small" id="restart-btn" type="button"><svg class="icon small"><use href="#ic-restart"/></svg>Restart device</button>
+        </div>
+      </section>
+
+      <!-- ============ 2. Select app file ============ -->
+      <section class="card" id="file-card" aria-labelledby="file-title">
+        <div class="card-head">
+          <span class="card-icon tone-teal"><svg class="icon"><use href="#ic-file"/></svg></span>
+          <div class="card-title-wrap">
+            <h2 id="file-title">Select app file</h2>
+            <p>Choose the app you want to install</p>
+          </div>
+        </div>
+
+        <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Choose an app file or drop one here">
+          <div class="dropzone-empty" id="dropzone-empty">
+            <span class="drop-icon"><svg class="icon"><use href="#ic-file"/></svg></span>
+            <strong>Tap to choose a file</strong>
+            <span>or drag and drop it here</span>
+            <span class="formats">APK · XAPK · APKM · ZIP</span>
+          </div>
+          <div class="file-row" id="file-row" hidden>
+            <span class="file-icon"><svg class="icon"><use href="#ic-file"/></svg></span>
+            <div class="file-copy">
+              <strong id="file-name">—</strong>
+              <span><span id="file-size">—</span> · <span id="file-kind">App file</span></span>
+            </div>
+            <button class="icon-btn" id="remove-file-btn" type="button" title="Remove file" aria-label="Remove file">
+              <svg class="icon"><use href="#ic-close"/></svg>
+            </button>
+          </div>
+        </div>
+        <input type="file" id="file-input" accept=".apk,.xapk,.apkm,.zip,application/vnd.android.package-archive,application/zip" hidden>
+
+        <p class="hint"><svg class="icon tiny"><use href="#ic-shield"/></svg> Your file stays in this browser tab. Nothing is uploaded to a server.</p>
+      </section>
+
+      <!-- ============ 3. Install app ============ -->
+      <section class="card" id="install-card" aria-labelledby="install-title">
+        <div class="card-head">
+          <span class="card-icon tone-green"><svg class="icon"><use href="#ic-download"/></svg></span>
+          <div class="card-title-wrap">
+            <h2 id="install-title">Install app</h2>
+            <p>Copy the file and install it on your phone</p>
+          </div>
+          <span class="status-chip" id="install-chip" data-state="idle">
+            <span class="dot"></span><span id="install-chip-text">Ready</span>
+          </span>
+        </div>
+
+        <div class="progress-panel" id="progress-panel" hidden>
+          <div class="progress-head">
+            <strong id="progress-title">Getting ready…</strong>
+            <span id="progress-percent">0%</span>
+          </div>
+          <div class="progress-track" id="progress-track" role="progressbar" aria-label="Install progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <p class="progress-detail" id="progress-detail"></p>
+        </div>
+
+        <div class="card-actions install-actions">
+          <button class="btn btn-filled" id="install-btn" type="button" disabled>
+            <svg class="icon"><use href="#ic-download"/></svg>Install
+          </button>
+          <button class="btn btn-text" id="cancel-btn" type="button" hidden>Cancel</button>
+          <span class="spinner" id="install-spinner" hidden></span>
+        </div>
+
+        <details class="log-drawer" id="log-drawer">
+          <summary>
+            <svg class="icon small chevron"><use href="#ic-chevron"/></svg>
+            <span>Technical log</span>
+            <span class="summary-meta">only needed for debugging</span>
+          </summary>
+          <div class="log-toolbar">
+            <button class="btn btn-text small" id="copy-log-btn" type="button"><svg class="icon small"><use href="#ic-copy"/></svg>Copy log</button>
+          </div>
+          <div class="log-output" id="log-output" aria-live="polite"></div>
+        </details>
+      </section>
+    </div>
+
+    <!-- ============ Help ============ -->
+    <details class="card help-card" id="help-card">
+      <summary>
+        <span class="card-icon tone-amber"><svg class="icon"><use href="#ic-help"/></svg></span>
+        <span class="help-summary-copy">
+          <strong>How to connect</strong>
+          <span>USB debugging, OTG, and Termux on the same phone</span>
+        </span>
+        <svg class="icon summary-chevron"><use href="#ic-chevron"/></svg>
+      </summary>
+
+      <div class="help-body">
+        <p class="help-intro">Turn on <strong>USB debugging</strong> first: open <em>Settings → About phone</em> and tap <em>Build number</em> 7 times, then go to <em>Settings → Developer options → USB debugging</em> and switch it on.</p>
+
+        <div class="help-columns">
+          <div class="help-block">
+            <h3><svg class="icon small"><use href="#ic-cable"/></svg> From a computer</h3>
+            <ol class="steps">
+              <li><span class="step-no">1</span><span>Connect the phone with a USB cable.</span></li>
+              <li><span class="step-no">2</span><span>On the phone, choose <strong>File transfer / MTP</strong> if asked.</span></li>
+              <li><span class="step-no">3</span><span>Tap <strong>Connect USB device</strong> here and pick your phone in the browser list.</span></li>
+              <li><span class="step-no">4</span><span>Approve <strong>Allow USB debugging?</strong> on the phone. Tick “Always allow” to skip it next time.</span></li>
+            </ol>
+          </div>
+          <div class="help-block">
+            <h3><svg class="icon small"><use href="#ic-phone"/></svg> From another Android phone</h3>
+            <ol class="steps">
+              <li><span class="step-no">1</span><span>Use a <strong>USB-OTG adapter</strong> and plug this phone into the other Android phone.</span></li>
+              <li><span class="step-no">2</span><span>On the other phone, enable USB debugging and allow the USB debugging prompt when it appears.</span></li>
+              <li><span class="step-no">3</span><span>Open this page in <strong>Chrome on Android</strong>, then tap Connect and choose the device.</span></li>
+              <li><span class="step-no">4</span><span>Keep the page in the foreground while the app is installing.</span></li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="help-block help-bridge-help">
+          <h3><svg class="icon small"><use href="#ic-terminal"/></svg> On this phone (Termux bridge)</h3>
+          <ol class="steps">
+            <li><span class="step-no">1</span><span>Enable <strong>Wireless Debugging</strong> in Developer options.</span></li>
+            <li><span class="step-no">2</span><span>In Termux, open the site's <code>termux</code> folder and run <code>bash start.sh</code>.</span></li>
+            <li><span class="step-no">3</span><span>Choose <strong>This phone (Termux)</strong> above, match the port, and tap <strong>Connect to bridge</strong>.</span></li>
+            <li><span class="step-no">4</span><span>Use <strong>Pair Wireless Debugging</strong> for the pairing port/code, then <strong>Connect ADB</strong> with the Wireless Debugging port. Approve any prompt on the phone.</span></li>
+          </ol>
+        </div>
+
+        <div class="help-note">
+          <svg class="icon small"><use href="#ic-info"/></svg>
+          <span>WebUSB works in Chromium browsers (Chrome, Edge, Brave) over HTTPS. The Termux bridge uses <code>ws://127.0.0.1</code> and works in any modern browser on the same phone. If a connection fails, close other ADB tools and try again.</span>
+        </div>
+      </div>
+    </details>
+
+    <footer class="footer">
+      <span>Sideload <span class="footer-dot">·</span> runs entirely in your browser</span>
+      <span class="footer-domain">sideload.mystichero.eu</span>
+    </footer>
+  </main>
+
+  <!-- ============ Snackbar ============ -->
+  <div class="snackbar" id="snackbar" role="status" aria-live="polite"></div>
+
+  <!-- ============ Device info dialog ============ -->
+  <dialog class="dialog" id="info-dialog" aria-labelledby="info-dialog-title">
+    <div class="dialog-head">
+      <span class="card-icon tone-blue"><svg class="icon"><use href="#ic-info"/></svg></span>
+      <h2 id="info-dialog-title">Device info</h2>
+      <button class="icon-btn dialog-close" type="button" data-close-dialog aria-label="Close"><svg class="icon"><use href="#ic-close"/></svg></button>
+    </div>
+    <div class="info-list" id="info-list"></div>
+    <div class="dialog-actions">
+      <button class="btn btn-filled" type="button" data-close-dialog>Done</button>
+    </div>
+  </dialog>
+
+  <!-- ============ Restart confirmation ============ -->
+  <dialog class="dialog" id="restart-dialog" aria-labelledby="restart-dialog-title">
+    <div class="dialog-head">
+      <span class="card-icon tone-amber"><svg class="icon"><use href="#ic-restart"/></svg></span>
+      <h2 id="restart-dialog-title">Restart device?</h2>
+    </div>
+    <p class="dialog-text">Your phone will reboot and the connection will close. This usually takes about a minute.</p>
+    <div class="dialog-actions">
+      <button class="btn btn-text" type="button" data-close-dialog>Cancel</button>
+      <button class="btn btn-filled" id="restart-confirm-btn" type="button">Restart</button>
+    </div>
+  </dialog>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
