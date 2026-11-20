@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="description" content="Sideload — safely install APK, XAPK, APKM and split-APK apps on your Android phone straight from your browser. No server, no installation.">
   <title>Sideload · Install apps on your Android phone</title>
-  <link rel="stylesheet" href="./style.css?v=3">
+  <link rel="stylesheet" href="./style.css?v=4">
 
   <!--
     Static ES modules, no build step. Versions are pinned deliberately so the
@@ -199,7 +199,7 @@
               <span>Pair Wireless Debugging</span>
               <span class="summary-meta">first-time setup</span>
             </summary>
-            <p class="bridge-pair-intro">Open <strong>Settings → Developer options → Wireless Debugging → Pair device</strong>. Enter the pairing port and 6-digit code, then connect ADB on the debugging port.</p>
+            <p class="bridge-pair-intro">Open <strong>Settings → Developer options → Wireless Debugging → Pair device</strong>. Pair with the temporary <strong>pairing port + 6-digit code</strong>, then connect ADB on the separate <strong>main Wireless Debugging port</strong>.</p>
             <div class="bridge-form-grid">
               <div class="bridge-field">
                 <label class="field-label" for="pair-port">Pairing port</label>
@@ -214,6 +214,10 @@
                 <input class="text-field" id="adb-port" type="number" inputmode="numeric" min="1" max="65535" step="1" placeholder="e.g. 5555" autocomplete="off" disabled>
               </div>
             </div>
+            <p class="hint">
+              <svg class="icon small"><use href="#ic-info"/></svg>
+              <span>The <strong>pairing port</strong> is only for the one-time Pair step. The <strong>debugging port</strong> is the main port shown at the top of the Wireless Debugging screen — it is a different number.</span>
+            </p>
             <div class="card-actions bridge-actions">
               <button class="btn btn-text small" id="bridge-pair-btn" type="button" disabled><svg class="icon small"><use href="#ic-check"/></svg>Pair</button>
               <button class="btn btn-tonal small" id="bridge-adb-connect-btn" type="button" disabled><svg class="icon small"><use href="#ic-link"/></svg>Connect ADB</button>
@@ -393,6 +397,6 @@
     </div>
   </dialog>
 
-  <script type="module" src="./app.js?v=3"></script>
+  <script type="module" src="./app.js?v=4"></script>
 </body>
 </html>

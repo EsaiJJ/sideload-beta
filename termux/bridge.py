@@ -406,10 +406,27 @@ def command_connect(payload: dict[str, Any]) -> dict[str, Any]:
         ["connect", f"127.0.0.1:{port}"], timeout=40
     )
     combined = (stdout + stderr).strip()
-    if return_code != 0 and "already connected" not in combined.lower():
-        raise BridgeError(combined or "Couldn't connect.", "CONNECT_FAILED")
+    lowered = combined.lower()
+    failed_to_connect = any(
+        phrase in lowered
+        for phrase in ("failed to connect", "cannot connect", "unable to connect", "connection refused")
+    )
+    if failed_to_connect or (return_code != 0 and "already connected" not in lowered):
+        raise BridgeError(
+            combined or "Couldn't connect. Check the Wireless Debugging port and try again.",
+            "CONNECT_FAILED",
+        )
 
-    serial, state = device_state()
+    # `adb connect` can return before the device shows up in `adb devices`.
+    # Poll briefly so a successful connect isn't reported as a failure.
+    serial, state = None, "none"
+    deadline = time.monotonic() + 8
+    while True:
+        serial, state = device_state()
+        if state == "device" or time.monotonic() >= deadline:
+            break
+        time.sleep(0.5)
+
     if state == "unauthorized":
         raise BridgeError(
             "Approve the 'Allow USB debugging?' prompt on the phone, then try again.",
@@ -417,7 +434,10 @@ def command_connect(payload: dict[str, Any]) -> dict[str, Any]:
         )
     if state != "device":
         raise BridgeError(
-            f"adb says the device is {state}. Toggle Wireless Debugging and retry.",
+            "ADB didn't finish connecting (state: "
+            + str(state)
+            + "). Make sure Wireless Debugging is on, then pair again and use "
+            "the main Wireless Debugging port (not the pairing port).",
             "ADB_OFFLINE",
         )
     return {

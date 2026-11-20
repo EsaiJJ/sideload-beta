@@ -10,7 +10,7 @@
  * badge from index.html) and add the CNAME file described in README.md.
  */
 
-import { BRIDGE_STATES, createBridgeConnection } from "./connection.js?v=3";
+import { BRIDGE_STATES, createBridgeConnection } from "./connection.js?v=4";
 
 const BETA = true;
 
@@ -199,7 +199,7 @@ function buildBridgeSetupCommand() {
   const port = Number.isInteger(rawPort) && rawPort >= 1 && rawPort <= 65535
     ? rawPort
     : (state.bridge?.port || 8765);
-  const scriptUrl = new URL("./termux/bridge.py", document.baseURI).href;
+  const scriptUrl = new URL("./termux/bridge.py?v=4", document.baseURI).href;
   return "(command -v python3 >/dev/null || pkg install -y python) && "
     + "(command -v adb >/dev/null || pkg install -y android-tools) && "
     + `curl -fsSL '${scriptUrl}' -o ~/sideload-bridge.py && `
@@ -217,6 +217,17 @@ async function copyBridgeCommand() {
   } catch {
     snackbar("Couldn't copy automatically. Long-press the command to copy it.", "error");
   }
+}
+
+function readBridgePort(input, label) {
+  const raw = String(input.value ?? "").trim();
+  const value = Number(raw);
+  if (!raw || !Number.isInteger(value) || value < 1 || value > 65535) {
+    input.focus();
+    snackbar(`Enter a valid ${label} (1–65535).`, "error");
+    return null;
+  }
+  return value;
 }
 
 function setDeviceStatus(stateName, text) {
@@ -630,12 +641,14 @@ async function pairWithBridge() {
     snackbar("Enter the 6-digit pairing code from Wireless Debugging.", "error");
     return;
   }
+  const pairPort = readBridgePort(els.pairPort, "pairing port");
+  if (pairPort === null) return;
 
   state.busy = true;
   setBridgeStatus("working", "Pairing…");
   refreshButtons();
   try {
-    const response = await state.bridge.pair({ port: els.pairPort.value, code });
+    const response = await state.bridge.pair({ port: pairPort, code });
     log(response.message || "Paired with Wireless Debugging.", "success");
     if (response.data?.output) log(response.data.output);
     snackbar("Paired. Now connect ADB on the Wireless Debugging port.", "success");
@@ -651,12 +664,14 @@ async function pairWithBridge() {
 
 async function connectAdbViaBridge() {
   if (!state.bridge?.isConnected || state.busy) return;
+  const adbPort = readBridgePort(els.adbPort, "Wireless Debugging port");
+  if (adbPort === null) return;
 
   state.busy = true;
   setBridgeStatus("working", "Connecting ADB…");
   refreshButtons();
   try {
-    const response = await state.bridge.adbConnect({ port: els.adbPort.value });
+    const response = await state.bridge.adbConnect({ port: adbPort });
     log(response.message || "ADB connected.", "success");
     if (response.data?.output) log(response.data.output);
     await refreshBridgeDeviceState();
