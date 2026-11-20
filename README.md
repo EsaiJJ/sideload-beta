@@ -43,11 +43,13 @@ In the new repository go to **Settings → Pages → Build and deployment**:
 - **Branch:** `main` / `/(root)`
 - Save, wait ~1 minute for the build.
 
-Your test URL is:
+The live beta for this repository is:
 
 ```
-https://<username>.github.io/sideload-beta/
+https://esaijj.github.io/sideload-beta/
 ```
+
+For a fork, the pattern is `https://<username>.github.io/<repo>/`.
 
 The small **Beta** badge in the header is intentional during testing. It is controlled by `const BETA = true;` near the top of `app.js`.
 
