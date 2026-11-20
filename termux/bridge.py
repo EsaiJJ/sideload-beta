@@ -640,6 +640,9 @@ def perform_install(ws: WebSocket, upload: Upload) -> None:
             install_single(ws, upload, total)
         else:
             install_split(ws, upload, total)
+        # Explicit terminal progress so the bar can't stall at the install
+        # phase even if the final response frame is missed.
+        upload_progress(ws, upload.request_id, "done", total, total, "App installed.", True)
         ws.send_json(
             {
                 "id": upload.request_id,

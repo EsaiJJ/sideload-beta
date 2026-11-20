@@ -10,7 +10,7 @@
  * badge from index.html) and add the CNAME file described in README.md.
  */
 
-import { BRIDGE_STATES, createBridgeConnection } from "./connection.js?v=4";
+import { BRIDGE_STATES, createBridgeConnection } from "./connection.js?v=5";
 
 const BETA = true;
 
@@ -116,6 +116,7 @@ const state = {
 
 let libsPromise = null;
 let snackbarTimer = null;
+let progressFloor = 0;
 
 /* -------------------------------------------------------------------------- */
 /* Small utilities                                                            */
@@ -199,7 +200,7 @@ function buildBridgeSetupCommand() {
   const port = Number.isInteger(rawPort) && rawPort >= 1 && rawPort <= 65535
     ? rawPort
     : (state.bridge?.port || 8765);
-  const scriptUrl = new URL("./termux/bridge.py?v=4", document.baseURI).href;
+  const scriptUrl = new URL("./termux/bridge.py?v=5", document.baseURI).href;
   return "(command -v python3 >/dev/null || pkg install -y python) && "
     + "(command -v adb >/dev/null || pkg install -y android-tools) && "
     + `curl -fsSL '${scriptUrl}' -o ~/sideload-bridge.py && `
@@ -246,7 +247,10 @@ function setInstallStatus(stateName, text) {
 }
 
 function setProgress(fraction, title, detail = "") {
-  const percent = Math.max(0, Math.min(100, Math.round(fraction * 100)));
+  // Never let a late/out-of-order progress frame pull the bar backwards.
+  const requested = Math.max(0, Math.min(100, Math.round(fraction * 100)));
+  const percent = Math.max(requested, progressFloor);
+  progressFloor = percent;
   els.progressPanel.hidden = false;
   els.progressTitle.textContent = title;
   els.progressPercent.textContent = `${percent}%`;
@@ -540,7 +544,8 @@ function handleBridgeProgress(message) {
   const phases = {
     upload: [0.03, 0.57, "Sending app to the bridge…"],
     push: [0.60, 0.20, "Copying app to your phone…"],
-    install: [0.80, 0.18, "Installing app…"],
+    install: [0.80, 0.20, "Installing app…"],
+    done: [1, 0, "App installed"],
   };
   const [base, span, title] = phases[message.phase] || [0.03, 0.75, "Working…"];
   setProgress(base + span * fraction, title, message.detail || "");
@@ -1164,6 +1169,7 @@ async function installApp() {
   state.busy = true;
 
   setInstallStatus("working", "Installing…");
+  progressFloor = 0;
   setProgress(0, "Getting ready…", "Preparing your app file.");
   refreshButtons();
 
