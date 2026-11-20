@@ -51,6 +51,8 @@ https://esaijj.github.io/sideload-beta/
 
 For a fork, the pattern is `https://<username>.github.io/<repo>/`.
 
+Local CSS/JS links use `?v=2` cache-busting. Bump that number in `index.html` and `app.js` whenever you push changes so beta testers don't keep a stale script for GitHub Pages' 10-minute cache.
+
 The small **Beta** badge in the header is intentional during testing. It is controlled by `const BETA = true;` near the top of `app.js`.
 
 ### What to test on the beta URL

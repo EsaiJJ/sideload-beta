@@ -10,7 +10,7 @@
  * badge from index.html) and add the CNAME file described in README.md.
  */
 
-import { BRIDGE_STATES, createBridgeConnection } from "./connection.js";
+import { BRIDGE_STATES, createBridgeConnection } from "./connection.js?v=2";
 
 const BETA = true;
 
