@@ -167,9 +167,15 @@
 
           <div class="bridge-callout">
             <svg class="icon small"><use href="#ic-info"/></svg>
-            <div>
+            <div class="bridge-callout-copy">
               <strong>Run the bridge on this phone</strong>
-              <p>In Termux, open this site's <code>termux</code> folder and run <code>bash start.sh</code>. Keep Termux open while installing.</p>
+              <p>Paste one command into Termux. It installs anything missing, downloads the bridge, and starts it.</p>
+              <div class="bridge-command-row">
+                <code class="bridge-command" id="bridge-command">Loading command…</code>
+                <button class="icon-btn" id="copy-bridge-command-btn" type="button" title="Copy Termux command" aria-label="Copy Termux command">
+                  <svg class="icon small"><use href="#ic-copy"/></svg>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -339,7 +345,7 @@
           <h3><svg class="icon small"><use href="#ic-terminal"/></svg> On this phone (Termux bridge)</h3>
           <ol class="steps">
             <li><span class="step-no">1</span><span>Enable <strong>Wireless Debugging</strong> in Developer options.</span></li>
-            <li><span class="step-no">2</span><span>In Termux, open the site's <code>termux</code> folder and run <code>bash start.sh</code>.</span></li>
+            <li><span class="step-no">2</span><span>Tap <strong>Copy Termux command</strong> above, paste it into Termux, and press Enter. Keep Termux open.</span></li>
             <li><span class="step-no">3</span><span>Choose <strong>This phone (Termux)</strong> above, match the port, and tap <strong>Connect to bridge</strong>.</span></li>
             <li><span class="step-no">4</span><span>Use <strong>Pair Wireless Debugging</strong> for the pairing port/code, then <strong>Connect ADB</strong> with the Wireless Debugging port. Approve any prompt on the phone.</span></li>
           </ol>

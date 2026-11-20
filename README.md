@@ -74,28 +74,19 @@ Open the page in a normal browser tab (not an incognito window if you want the R
 This mode avoids USB entirely. The browser page and the bridge both run on the phone; the bridge listens only on `127.0.0.1`.
 
 1. On the phone, enable **Developer options → Wireless Debugging**.
-2. Copy the `termux/` folder from this site's files into Termux's home directory (or open it directly if you already have the folder).
-3. In Termux, run:
+2. In the website, choose **This phone (Termux)** and tap **Copy Termux command**.
+3. Paste that command into Termux and press Enter. It installs `python` and `android-tools` (`adb`) only if missing, downloads the current `bridge.py` from this site, and starts it on the port shown in the page. Keep Termux open while installing.
 
-   ```bash
-   cd termux
-   bash start.sh
-   ```
+   Manual alternative: copy the `termux/` folder into Termux and run `bash start.sh` from there.
 
-   The first run installs `python` and `android-tools` (`adb`) if they are missing. It prints the port it is listening on, usually `8765`.
-
-4. In the website, choose **This phone (Termux)**, set the same port, and tap **Connect to bridge**.
+4. Tap **Connect to bridge** in the website.
 5. Open **Pair Wireless Debugging** in the page. On the phone go to **Wireless Debugging → Pair device** and enter the pairing port and 6-digit code in the page, then tap **Pair**.
 6. Enter the **Wireless Debugging port** (the main debugging port, not the pairing port) and tap **Connect ADB**. Approve the USB debugging prompt on the phone if shown.
 7. Select an app file and tap **Install**. Keep Termux and the browser tab in the foreground.
 
-To change the listening port:
+To change the listening port, edit the **Bridge port** field in the page *before* copying the command — the copied command uses that port automatically.
 
-```bash
-SIDELOAD_PORT=9000 bash start.sh
-```
-
-and set `9000` in the page. Advanced options: `SIDELOAD_HOST` (default `127.0.0.1`) and `SIDELOAD_ALLOWED_ORIGINS` (comma-separated patterns; defaults include the beta GitHub Pages origin, localhost, and `sideload.mystichero.eu`).
+For manual setup, `SIDELOAD_PORT=9000 bash start.sh` also works. Advanced options: `SIDELOAD_HOST` (default `127.0.0.1`) and `SIDELOAD_ALLOWED_ORIGINS` (comma-separated patterns; defaults include the beta GitHub Pages origin, localhost, and `sideload.mystichero.eu`).
 
 The bridge is stdlib-only Python and uses a short JSON/binary WebSocket protocol documented at the top of `termux/bridge.py`. Uploads are written under `~/.sideload_upload_*` in Termux and pushed to `/data/local/tmp/` for `pm install`; both are removed in `finally` blocks, including on failure or cancel.
 

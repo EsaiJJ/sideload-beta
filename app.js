@@ -48,6 +48,8 @@ const els = {
   bridgeChip: $("bridge-chip"),
   bridgeChipText: $("bridge-chip-text"),
   bridgeAddress: $("bridge-address"),
+  bridgeCommand: $("bridge-command"),
+  copyBridgeCommandBtn: $("copy-bridge-command-btn"),
   bridgePort: $("bridge-port"),
   bridgeConnectBtn: $("bridge-connect-btn"),
   bridgeDisconnectBtn: $("bridge-disconnect-btn"),
@@ -173,6 +175,48 @@ function snackbar(message, type = "info") {
   snackbarTimer = setTimeout(() => {
     els.snackbar.className = "snackbar";
   }, 4800);
+}
+
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const area = document.createElement("textarea");
+  area.value = text;
+  area.setAttribute("readonly", "");
+  area.style.position = "fixed";
+  area.style.opacity = "0";
+  document.body.appendChild(area);
+  area.select();
+  const copied = document.execCommand("copy");
+  area.remove();
+  if (!copied) throw new Error("Clipboard copy is unavailable.");
+}
+
+function buildBridgeSetupCommand() {
+  const rawPort = Number(els.bridgePort.value);
+  const port = Number.isInteger(rawPort) && rawPort >= 1 && rawPort <= 65535
+    ? rawPort
+    : (state.bridge?.port || 8765);
+  const scriptUrl = new URL("./termux/bridge.py", document.baseURI).href;
+  return "(command -v python3 >/dev/null || pkg install -y python) && "
+    + "(command -v adb >/dev/null || pkg install -y android-tools) && "
+    + `curl -fsSL '${scriptUrl}' -o ~/sideload-bridge.py && `
+    + `python3 ~/sideload-bridge.py --port ${port}`;
+}
+
+function updateBridgeCommand() {
+  els.bridgeCommand.textContent = buildBridgeSetupCommand();
+}
+
+async function copyBridgeCommand() {
+  try {
+    await copyText(buildBridgeSetupCommand());
+    snackbar("Termux command copied. Paste it in Termux and press Enter.", "success");
+  } catch {
+    snackbar("Couldn't copy automatically. Long-press the command to copy it.", "error");
+  }
 }
 
 function setDeviceStatus(stateName, text) {
@@ -1172,7 +1216,11 @@ function setupEvents() {
   els.bridgeReconnectBtn.addEventListener("click", () => connectBridge({ reconnect: true }));
   els.bridgePairBtn.addEventListener("click", pairWithBridge);
   els.bridgeAdbConnectBtn.addEventListener("click", connectAdbViaBridge);
-  els.bridgePort.addEventListener("input", updateBridgeAddress);
+  els.copyBridgeCommandBtn.addEventListener("click", copyBridgeCommand);
+  els.bridgePort.addEventListener("input", () => {
+    updateBridgeAddress();
+    updateBridgeCommand();
+  });
 
   els.infoBtn.addEventListener("click", showDeviceInfo);
   els.restartBtn.addEventListener("click", restartDevice);
@@ -1220,7 +1268,7 @@ function setupEvents() {
 
   els.copyLogBtn.addEventListener("click", async () => {
     try {
-      await navigator.clipboard.writeText(els.logOutput.innerText);
+      await copyText(els.logOutput.innerText);
       snackbar("Technical log copied.", "success");
     } catch {
       snackbar("Couldn't copy the log. Select the text and copy manually.", "error");
@@ -1248,6 +1296,7 @@ function init() {
 
   initBridge();
   updateModeUI();
+  updateBridgeCommand();
   setupEvents();
   log("Sideload ready. Libraries are loading from the CDN…");
 

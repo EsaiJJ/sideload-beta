@@ -284,6 +284,29 @@ button { font: inherit; }
 }
 .bridge-callout .icon { color: var(--primary); margin-top: 1px; }
 .bridge-callout strong { display: block; color: var(--text); font-size: 12.8px; margin-bottom: 2px; }
+.bridge-callout-copy { flex: 1; min-width: 0; }
+.bridge-command-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 9px;
+  padding: 4px 4px 4px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .8);
+  border: 1px solid #cfdef7;
+}
+.bridge-command {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  color: #3c4043;
+}
+.bridge-command-row .icon-btn { width: 30px; height: 30px; flex: 0 0 auto; color: var(--primary); }
 .bridge-callout code, .bridge-pair-intro code, .help-bridge-help code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: .92em;
