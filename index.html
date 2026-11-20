@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="description" content="Sideload — safely install APK, XAPK, APKM and split-APK apps on your Android phone straight from your browser. No server, no installation.">
   <title>Sideload · Install apps on your Android phone</title>
-  <link rel="stylesheet" href="./style.css?v=5">
+  <link rel="stylesheet" href="./style.css?v=6">
 
   <!--
     Static ES modules, no build step. Versions are pinned deliberately so the
@@ -169,7 +169,7 @@
             <svg class="icon small"><use href="#ic-info"/></svg>
             <div class="bridge-callout-copy">
               <strong>Run the bridge on this phone</strong>
-              <p>Paste one command into Termux. It installs anything missing, downloads the bridge, and starts it.</p>
+              <p>Paste one command into Termux. It installs anything missing, downloads the bridge, and starts it. Keep Termux in the foreground — Android can pause background apps.</p>
               <div class="bridge-command-row">
                 <input class="bridge-command" id="bridge-command" type="text" readonly value="Copy command unavailable — reload the page" aria-label="Termux command">
                 <button class="icon-btn" id="copy-bridge-command-btn" type="button" title="Copy Termux command" aria-label="Copy Termux command">
@@ -397,6 +397,6 @@
     </div>
   </dialog>
 
-  <script type="module" src="./app.js?v=5"></script>
+  <script type="module" src="./app.js?v=6"></script>
 </body>
 </html>

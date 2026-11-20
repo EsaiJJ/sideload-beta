@@ -51,7 +51,7 @@ https://esaijj.github.io/sideload-beta/
 
 For a fork, the pattern is `https://<username>.github.io/<repo>/`.
 
-Local CSS/JS links use `?v=5` cache-busting (the copied Termux command also downloads `bridge.py` with that version). Bump that number in `index.html` and `app.js` whenever you push changes so beta testers don't keep a stale script for GitHub Pages' 10-minute cache.
+Local CSS/JS links use `?v=6` cache-busting (the copied Termux command also downloads `bridge.py` with that version). Bump that number in `index.html` and `app.js` whenever you push changes so beta testers don't keep a stale script for GitHub Pages' 10-minute cache.
 
 The small **Beta** badge in the header is intentional during testing. It is controlled by `const BETA = true;` near the top of `app.js`.
 

@@ -70,6 +70,7 @@ export class BridgeConnection {
     this.shouldReconnect = false;
     this.reconnectAttempts = 0;
     this.reconnectTimer = null;
+    this.connectTimer = null;
     this.lastError = null;
   }
 
@@ -129,9 +130,15 @@ export class BridgeConnection {
       const settle = (error, result) => {
         if (settled) return;
         settled = true;
+        if (this.connectTimer) {
+          clearTimeout(this.connectTimer);
+          this.connectTimer = null;
+        }
+        if (this._settleConnect === settle) this._settleConnect = null;
         if (error) reject(error);
         else resolve(result);
       };
+      this._settleConnect = settle;
 
       let socket;
       try {
@@ -167,7 +174,7 @@ export class BridgeConnection {
 
       socket.addEventListener("error", () => {
         const error = new BridgeError(
-          "Couldn't reach the bridge. Start start.sh in Termux and check the port.",
+          "Couldn't reach the bridge. Open Termux, check the bridge is still running, then try again.",
           "BRIDGE_UNREACHABLE",
         );
         this.lastError = error;
@@ -184,12 +191,30 @@ export class BridgeConnection {
         }
         this._handleClose();
       });
+
+      // A backgrounded/paused Termux can leave the TCP connect hanging with
+      // no error event at all. Never leave the UI stuck on "Connecting…".
+      this.connectTimer = setTimeout(() => {
+        if (settled || this.state !== BRIDGE_STATES.CONNECTING) return;
+        const error = new BridgeError(
+          "The bridge didn't answer. Open Termux and check it's still running, then try again.",
+          "BRIDGE_TIMEOUT",
+        );
+        this.lastError = error;
+        this._setState(BRIDGE_STATES.ERROR, error.message);
+        this._log(error.message, "error");
+        settle(error);
+        this._teardownSocket();
+      }, 10000);
     });
   }
 
   disconnect() {
     this.shouldReconnect = false;
     this._clearReconnectTimer();
+    if (this._settleConnect) {
+      this._settleConnect(new BridgeError("Disconnected.", "DISCONNECTED"));
+    }
     this._rejectPending(new BridgeError("Disconnected.", "DISCONNECTED"));
     this._teardownSocket();
     this._setState(BRIDGE_STATES.DISCONNECTED);

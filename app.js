@@ -10,7 +10,7 @@
  * badge from index.html) and add the CNAME file described in README.md.
  */
 
-import { BRIDGE_STATES, createBridgeConnection } from "./connection.js?v=5";
+import { BRIDGE_STATES, createBridgeConnection } from "./connection.js?v=6";
 
 const BETA = true;
 
@@ -112,6 +112,7 @@ const state = {
   bridge: null,
   bridgeDeviceReady: false,
   bridgeCancelled: false,
+  bridgeWantsConnection: false,
 };
 
 let libsPromise = null;
@@ -200,7 +201,7 @@ function buildBridgeSetupCommand() {
   const port = Number.isInteger(rawPort) && rawPort >= 1 && rawPort <= 65535
     ? rawPort
     : (state.bridge?.port || 8765);
-  const scriptUrl = new URL("./termux/bridge.py?v=5", document.baseURI).href;
+  const scriptUrl = new URL("./termux/bridge.py?v=6", document.baseURI).href;
   return "(command -v python3 >/dev/null || pkg install -y python) && "
     + "(command -v adb >/dev/null || pkg install -y android-tools) && "
     + `curl -fsSL '${scriptUrl}' -o ~/sideload-bridge.py && `
@@ -596,6 +597,7 @@ async function connectBridge({ reconnect = false } = {}) {
   if (state.busy) return;
   if (state.bridge?.isConnected && !reconnect) return;
 
+  state.bridgeWantsConnection = true;
   state.busy = true;
   setBridgeStatus("connecting", "Connecting…");
   setDeviceStatus("connecting", "Connecting…");
@@ -628,6 +630,7 @@ async function connectBridge({ reconnect = false } = {}) {
 
 function disconnectBridge() {
   if (state.mode !== "bridge" || !state.bridge || state.busy) return;
+  state.bridgeWantsConnection = false;
   state.bridge.disconnect();
   state.bridgeDeviceReady = false;
   state.deviceInfo = null;
@@ -1235,6 +1238,14 @@ function setupEvents() {
   els.bridgeConnectBtn.addEventListener("click", connectBridge);
   els.bridgeDisconnectBtn.addEventListener("click", disconnectBridge);
   els.bridgeReconnectBtn.addEventListener("click", () => connectBridge({ reconnect: true }));
+  // Coming back from Termux should resume a pending/failed bridge connection
+  // without needing a second tap on Connect.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    if (state.mode !== "bridge" || state.busy || !state.bridgeWantsConnection) return;
+    if (state.bridge?.isConnected) return;
+    void connectBridge();
+  });
   els.bridgePairBtn.addEventListener("click", pairWithBridge);
   els.bridgeAdbConnectBtn.addEventListener("click", connectAdbViaBridge);
   els.copyBridgeCommandBtn.addEventListener("click", copyBridgeCommand);
